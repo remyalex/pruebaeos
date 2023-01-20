@@ -14,19 +14,6 @@ UPLOAD_DIRECTORY = "./geoprocess_files"
 if not os.path.exists(UPLOAD_DIRECTORY):
     os.makedirs(UPLOAD_DIRECTORY)
 
-@app.route("/files")
-def list_files():
-    files = []
-    for filename in os.listdir(UPLOAD_DIRECTORY):
-        path = os.path.join(UPLOAD_DIRECTORY, filename)
-        if os.path.isfile(path):
-            files.append(filename)
-    return jsonify(files)
-
-@app.route("/files/<path:path>")
-def get_file(path):
-    return send_from_directory(UPLOAD_DIRECTORY, path, as_attachment=True)
-
 api = Api(app)
 eosapi = API('remygalan', '3os4pi_choco')
 ee = EarthExplorer('remygalan', '3os4pi_choco')
@@ -86,18 +73,8 @@ class Download(Resource):
                     files.append(filename)
             gpOut = jsonify(files)
         return gpOut
-    '''
-    def ZipShape(self, path):
-        path, name = os.path.split(path)
-        zip_path = os.path.join(path, name.split('.')[0] +'_'+datetime.now().strftime('%Y%m%d%H%M%S') + '.zip')
-        zip = zipfile.ZipFile(zip_path, 'w')
-        for f in os.listdir(path):
-            if os.path.isfile(os.path.join(path,f)) and not f.endswith('.zip'):
-                zip.write(os.path.join(path,f), f)
-                os.remove(os.path.join(path,f))
-        zip.close()
-        return zip
-    '''
+
+
 api.add_resource(Catalog, '/catalog')
 api.add_resource(Download, '/download')
 
