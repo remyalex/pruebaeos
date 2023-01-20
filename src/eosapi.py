@@ -1,6 +1,7 @@
 import os
 import json
 from landsatxplore.api import API
+from landsatxplore.earthexplorer import EarthExplorer
 from flask import Flask, request, jsonify
 from flask_restful import Resource, Api, abort
 from datetime import datetime
@@ -28,6 +29,7 @@ def get_file(path):
 
 api = Api(app)
 eosapi = API('remygalan', '3os4pi_choco')
+ee = EarthExplorer('remygalan', '3os4pi_choco')
 
 class Catalog(Resource):
     catalogRequest = {
@@ -59,7 +61,32 @@ class Catalog(Resource):
             "escenas": scenes
         }
         return gpOut
-'''
+
+
+class Download(Resource):
+    downloadRequest = {
+        "escena": fields.Str(required=True),
+        "output_dir": fields.Str(required=True),
+        "accion": fields.Str(required=True)
+    }
+    @use_kwargs(downloadRequest)
+    def post(self, escena, output_dir, accion):
+        if accion=="descarga":
+            ee.download(escena, output_dir=output_dir)
+            print (str(datetime.now()) + ' - (GET) feats: ' + str(escena))
+            gpOut = {
+                "escena": str(escena),
+                "url": str(escena)
+            }
+        elif accion=="listar":
+            files = []
+            for filename in os.listdir(output_dir):
+                path = os.path.join(output_dir, escena)
+                if os.path.isfile(path):
+                    files.append(filename)
+            gpOut = jsonify(files)
+        return gpOut
+    '''
     def ZipShape(self, path):
         path, name = os.path.split(path)
         zip_path = os.path.join(path, name.split('.')[0] +'_'+datetime.now().strftime('%Y%m%d%H%M%S') + '.zip')
@@ -70,23 +97,15 @@ class Catalog(Resource):
                 os.remove(os.path.join(path,f))
         zip.close()
         return zip
-
-class Download(Resource):
-    def post(self, filename):
-        runapDF = gp.read_file(urlDptos)
-        print (str(datetime.now()) + ' - (GET) RUNAP feats: ' + str(len(runapDF)))
-        runapDF.plot()
-        plt.savefig(UPLOAD_DIRECTORY+'/'+filename+'_'+datetime.now().strftime('%Y%m%d%H%M%S') +'.png')
-        return send_from_directory(UPLOAD_DIRECTORY, filename+'_'+datetime.now().strftime('%Y%m%d%H%M%S') +'.png', as_attachment=False)
-'''
-
+    '''
 api.add_resource(Catalog, '/catalog')
-#api.add_resource(Download, '/printMap/<filename>')
+api.add_resource(Download, '/download')
 
 # This error handler is necessary for usage with Flask-RESTful.
 @parser.error_handler
 def handle_request_parsing_error(err, req, schema, *, error_status_code, error_headers):
     abort(error_status_code, errors=err.messages)
+    eosapi.logout()
 
 if __name__ == '__main__':
  app.run(debug=True, host='0.0.0.0')
