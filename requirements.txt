@@ -1,0 +1,5 @@
+Flask=2.0.0
+Flask_RESTful==0.3.9
+landsatxplore==0.13.0
+marshmallow==3.19.0
+webargs==8.2.0
