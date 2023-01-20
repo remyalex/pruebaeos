@@ -50,7 +50,7 @@ class Catalog(Resource):
             max_cloud_cover=nubosidad_max
         )
 
-        gpLog = str(datetime.now()) + ' - (GeoProccess) '+ filename +' feats: ' + str(len(scenes))
+        gpLog = str(datetime.now()) + ' - (GeoProccess) '+ dataset +' feats: ' + str(len(scenes))
         print (gpLog)
         self.logs.append(gpLog)
 
