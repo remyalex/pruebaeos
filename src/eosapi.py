@@ -15,10 +15,13 @@ if not os.path.exists(UPLOAD_DIRECTORY):
     os.makedirs(UPLOAD_DIRECTORY)
 
 api = Api(app)
-eosapi = API('remygalan', '3os4pi_choco')
-ee = EarthExplorer('remygalan', '3os4pi_choco')
 
 class Catalog(Resource):
+    init_every_request = True
+    def __init__(self):
+        self.eosapi = API('remygalan', '3os4pi_choco')
+        self.logs = []
+
     catalogRequest = {
         "dataset": fields.Str(required=True),
         "lat": fields.Float(required=True),
@@ -27,10 +30,10 @@ class Catalog(Resource):
         "fecha_fin": fields.Str(required=False),
         "nubosidad_max": fields.Str(required=False)
     }
+
     @use_kwargs(catalogRequest)
     def post(self, dataset, lat, lon, fecha_inicio, fecha_fin, nubosidad_max):
-        self.logs = []
-        scenes = eosapi.search(
+        scenes = self.eosapi.search(
             dataset=dataset,
             latitude=lat,
             longitude=lon,
@@ -42,7 +45,7 @@ class Catalog(Resource):
         gpLog = str(datetime.now()) + ' - (GeoProccess) '+ dataset +' feats: ' + str(len(scenes))
         print (gpLog)
         self.logs.append(gpLog)
-
+        self.eosapi.logout()
         gpOut = {
             "escenas_encontradas": str(len(scenes)),
             "escenas": scenes
@@ -51,15 +54,20 @@ class Catalog(Resource):
 
 
 class Download(Resource):
+    init_every_request = True
+    def __init__(self):
+        self.ee = EarthExplorer('remygalan', '3os4pi_choco')
+
     downloadRequest = {
         "escena": fields.Str(required=True),
         "output_dir": fields.Str(required=True),
         "accion": fields.Str(required=True)
     }
+
     @use_kwargs(downloadRequest)
     def post(self, escena, output_dir, accion):
         if accion=="descarga":
-            ee.download(escena, output_dir=output_dir)
+            self.ee.download(escena, output_dir=output_dir)
             print (str(datetime.now()) + ' - (GET) feats: ' + str(escena))
             gpOut = {
                 "escena": str(escena),
@@ -72,8 +80,8 @@ class Download(Resource):
                 if os.path.isfile(path):
                     files.append(filename)
             gpOut = jsonify(files)
+        self.ee.logout()
         return gpOut
-
 
 api.add_resource(Catalog, '/catalog')
 api.add_resource(Download, '/download')
@@ -82,7 +90,6 @@ api.add_resource(Download, '/download')
 @parser.error_handler
 def handle_request_parsing_error(err, req, schema, *, error_status_code, error_headers):
     abort(error_status_code, errors=err.messages)
-    eosapi.logout()
 
 if __name__ == '__main__':
  app.run(debug=True, host='0.0.0.0')
